@@ -1,0 +1,10 @@
+{
+  "Entries": [
+    {
+      "Source": "device.iot",
+      "DetailType": "device-alert",
+      "Detail": "{\"device_id\": \"test-sensor-001\", \"number\": \"INC0010107\", \"temperature\": 98, \"note\": \"Temperature increased - Update test\"}",
+      "EventBusName": "device-events-bus"
+    }
+  ]
+}

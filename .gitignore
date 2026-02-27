@@ -1,0 +1,55 @@
+# Terraform state files
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+tfplan
+tfplan.json
+
+# Terraform variable files (local overrides)
+terraform.tfvars
+terraform.tfvars.local
+terraform.tfvars.json
+local.tfvars
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+env/
+.Python
+
+# Build outputs
+build/
+dist/
+*.zip
+
+# Logs
+*.log
+logs/
+
+# Sensitive files
+*.pem
+*.key
+*.crt
+*.cer
+.aws/credentials
+.aws/config
+

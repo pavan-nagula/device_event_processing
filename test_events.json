@@ -1,0 +1,10 @@
+{
+  "Entries": [
+    {
+      "Source": "device.iot",
+      "DetailType": "device-alert",
+      "Detail": "{\"device_id\": \"test-sensor-002\", \"temperature\": 95, \"note\": \"Temperature exceeded critical threshold - Test Create\"}",
+      "EventBusName": "device-events-bus"
+    }
+  ]
+}

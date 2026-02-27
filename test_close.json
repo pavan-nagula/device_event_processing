@@ -1,0 +1,10 @@
+{
+  "Entries": [
+    {
+      "Source": "device.iot",
+      "DetailType": "device-alert",
+      "Detail": "{\"device_id\": \"test-sensor-001\", \"number\": \"INC0010108\", \"state\": \"CLOSED\", \"resolved\": true, \"caller_id\": \"ITIL User\", \"resolution_code\": \"Solved\", \"note\": \"Temperature back to normal - Incident resolved\"}",
+      "EventBusName": "device-events-bus"
+    }
+  ]
+}
