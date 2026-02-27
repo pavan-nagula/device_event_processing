@@ -67,8 +67,6 @@ This repository implements a workflow that captures device events, processes the
 
 ## Prerequisites
 - AWS permissions for SQS, Lambda, IAM, KMS, EventBridge, Secrets Manager
-- No pre-created resources required
-- Provide `ssm_param_name` if storing ARNs in SSM
 
 ---
 
