@@ -36,7 +36,7 @@ Behavior:
 - Reads ServiceNow OAuth credentials from AWS Secrets Manager
 - Calls ServiceNow API to create/update records
 
-### 3) EventBridge Org Module
+### 3) EventBridge Module
 
 Root call: `module "eventbridge"`  
 Source: `./eventBridge-main/modules/eventbridge_org`
