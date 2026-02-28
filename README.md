@@ -1,91 +1,88 @@
 # Device Event Processing
 
-This repository implements a workflow that captures device events, processes them through AWS EventBridge and Lambda, and creates incident records in **ServiceNow**. It uses Terraform modules to provision all AWS resources.
+This repository provisions an AWS event pipeline that ingests device events, processes them with Lambda, and creates or updates records in ServiceNow.
 
 ## Architecture Overview
 
-### 1. Module: `sqs`
-**Source:** `sqs`
+### 1) SQS Module
 
-#### Creates:
+Root call: `module "sqs"`  
+Source: `./sqs_terraform/modules/sqs`
+
+Creates or references:
+
 - Primary SQS queue
 - Dead Letter Queue (DLQ)
 
-#### Outputs:
-- queue_url
-- queue_arn
-- dlq_arn
+Used by:
 
----
+- Lambda event source mapping for retry processing
 
-### 2. Module: `lambda_servicenow`
-**Source:** `lambda_serviceNow-main`
-**Dependencies:** Uses SQS outputs (`module.sqs.queue_url`, etc.)
+### 2) Lambda + ServiceNow Module
 
-#### Creates:
-- KMS key + alias
-- IAM role & policy
+Root call: `module "lambda_servicenow"`  
+Source: `./lambda_serviceNow-main`
+
+Creates or references:
+
+- Lambda function and deployment package
+- IAM role/policies
+- KMS key/alias for Lambda env encryption
 - CloudWatch log group
-- Lambda function (`handler.py`)
 
-#### Additional Behavior:
-- Event source mapping → Lambda triggered by SQS
-- Optional EventBridge rule (`create_eventbridge_rule = true`)
-- Retrieves OAuth credentials from Secrets Manager
-- Sets environment variables for SQS + ServiceNow
+Behavior:
 
-**Note:** This module does **not** create SSM parameters.
+- Consumes messages from SQS via event source mapping
+- Reads ServiceNow OAuth credentials from AWS Secrets Manager
+- Calls ServiceNow API to create/update records
 
----
+### 3) EventBridge Org Module
 
-### 3. Module: `eventbridge`
-**Source:** `eventbridge`
+Root call: `module "eventbridge"`  
+Source: `./eventBridge-main/modules/eventbridge_org`
 
-#### Takes Inputs From:
-- module.lambda_servicenow.lambda_function_arn
-- module.sqs.queue_arn
-- module.sqs.dlq_arn
+Creates or references:
 
-#### Creates:
 - Event bus
-- Rules
-- IAM role/policy
-- aws_lambda_permission
+- Event rule(s) and target(s)
+- Optional archive for replay
 
-#### SSM Parameter Logic:
-- If both ARN + ssm_param_name are provided → creates SSM String parameter
-- If only ssm_param_name → reads ARN at apply time
+In this stack, EventBridge routes matched events to Lambda.
 
----
+### 4) Root-Level Integration Resources
 
-## Passing Values / Variables
-- Configuration is defined in variables.tf and set via terraform.tfvars
-- Module outputs referenced directly
-- Provider default_tags merges project + resource tags
+The root Terraform also creates integration resources outside modules:
 
----
+- EventBridge IAM role and inline policy
+- Lambda permission for EventBridge invoke
+
+## Event Processing Flow
+
+### Scenario 1: Happy Path
+
+1. Producer publishes event to EventBridge bus.
+2. Rule matches by `source` and `detail-type`.
+3. EventBridge invokes Lambda target.
+4. Lambda sends create/update request to ServiceNow.
+5. Flow completes.
+
+### Scenario 2: ServiceNow/API Failure
+
+1. EventBridge invokes Lambda.
+2. Lambda fails to write to ServiceNow.
+3. Lambda enqueues payload into the main SQS queue.
+4. SQS mapping re-invokes Lambda for retry attempts.
+5. After max receives, message moves to DLQ.
+
+### EventBridge Target Retry/DLQ
+
+The EventBridge target itself is also configured with retry policy and target-level DLQ.
+
+## Configuration
+
+- Inputs are defined in `variables.tf` and typically set in `terraform.tfvars`.
+- Provider `default_tags` merges base tags with custom tags.
 
 ## Prerequisites
-- AWS permissions for SQS, Lambda, IAM, KMS, EventBridge, Secrets Manager
 
----
-
-
-# Event Processing Flow
-
-## Scenario 1: Happy Path (Everything Works)
-1. Event arrives → sent to EventBridge
-2. EventBridge rule matches → sent to Lambda
-3. Lambda receives payload
-4. Lambda calls ServiceNow → Incident created
-5. Process completes successfully
-
-## Scenario 2: Error Path (ServiceNow Down)
-1. Event arrives
-2. EventBridge routes event
-3. Lambda processes event
-4. ServiceNow call fails
-5. Lambda stores failed message in SQS
-6. Lambda retries via event source mapping
-   - Success: Incident created
-   - Failure after retries → message moved to DLQ
+- AWS permissions for EventBridge, Lambda, IAM, SQS, KMS, CloudWatch Logs, and Secrets Manager.
